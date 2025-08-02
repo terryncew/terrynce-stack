@@ -228,24 +228,7 @@ The Terrynce Stack implements novel approaches to AI system stability:
 - **Adaptive Coherence**: Dynamic system behavior based on real-time coherence assessment
 - **Surgical Interventions**: Localized recovery mechanisms that preserve overall system function
 
-For academic background, see:
-
-- [Coherence Optimization in Complex Systems](papers/coherence-optimization.pdf)
-- [Memory Error Localization for AI Safety](papers/mel-safety.pdf)
-- [Formal Verification of Adaptive Systems](papers/formal-verification.pdf)
-
-## License
-
-AGPL-3.0-or-later WITH Commons-Clause
-
-The Commons Clause prevents commercialization of the core stack while allowing research and internal use. Contact for commercial licensing.
-
-## Support
-
-- **Documentation**: [docs.terrynce.dev](https://docs.terrynce.dev)
-- **Issues**: Use GitHub Issues for bugs and feature requests
-- **Discussions**: GitHub Discussions for architecture questions
-- **Email**: support@terrynce.dev for private inquiries
+ inquiries
 
 -----
 
