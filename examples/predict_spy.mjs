@@ -15,9 +15,8 @@ try {
 const receipt = buildReceipt({
   claim,
   because: ["FlowState day decode", "30d minute context"],
-  but: [`Scale drift Δ_scale = ${deltaScale.toFixed(3)} (min↔hour)`],
-  so: deltaScale <= 0.03 ? "Within 3% tolerance — recheck at close"
-                        : "Above 3% — needs explanation",
+  but: [`Scale drift Δ_scale = ${deltaScale.toFixed(3)} (min-hour)`],
+  so: deltaScale <= 0.03 ? "Within 3% tolerance — recheck at close" : "Above 3% — needs explanation",
   telem: { delta_scale: deltaScale },
   threshold: 0.03,
   model: "ibm-research/flowstate-r1",
