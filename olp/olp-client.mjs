@@ -1,4 +1,5 @@
-// Robust client: posts to /frame with wrapper fallback + retry, and writes a receipt.
+// Robust client: posts raw frames to /frame (no wrapper), with retry.
+// Also writes a receipt JSON.
 import fs from "node:fs";
 import path from "node:path";
 
@@ -24,8 +25,7 @@ async function postWithRetry(bodyObj, tries = 5, delay = 500) {
   let last;
   for (let i = 0; i < tries; i++) {
     try {
-      try { return await postOnce(OLP_URL, { frame: bodyObj }); }
-      catch { return await postOnce(OLP_URL, bodyObj); } // fallback
+      return await postOnce(OLP_URL, bodyObj);          // send RAW frame
     } catch (e) {
       last = e;
       await new Promise(r => setTimeout(r, delay));
@@ -34,9 +34,13 @@ async function postWithRetry(bodyObj, tries = 5, delay = 500) {
   throw new Error(`OLP POST failed after retries: ${last}`);
 }
 
-export function minimalFrame({ claimLabel, deltaScale = 0.0,
-  attrs = { asset_class: "equity", cadence_pair: "min↔hour" } } = {}) {
+export function minimalFrame({
+  claimLabel,
+  deltaScale = 0.0,
+  attrs = { asset_class: "equity", cadence_pair: "min-hour" }, // pure ASCII
+} = {}) {
   return {
+    stream_id: "stack",
     nodes: [{ id: "C1", type: "Claim", label: claimLabel, attrs, weight: 0.62 }],
     edges: [],
     morphs: [],
@@ -45,7 +49,7 @@ export function minimalFrame({ claimLabel, deltaScale = 0.0,
 }
 
 export async function sendFrame({ nodes = [], edges = [], telem = {}, morphs = [], digest = null } = {}) {
-  const frame = { nodes, edges, morphs, telem, ...(digest ? { digest } : {}) };
+  const frame = { stream_id: "stack", nodes, edges, morphs, telem, ...(digest ? { digest } : {}) };
   return postWithRetry(frame);
 }
 
