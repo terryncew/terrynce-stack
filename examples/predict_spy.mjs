@@ -1,47 +1,27 @@
-// examples/predict_spy.mjs
-// Demo: send 3 frames and write a receipt file you can fetch in the UI.
-import { sendFrame, buildReceipt, writeReceiptFile } from "../olp/olp-client.mjs";
+import { minimalFrame, sendFrame, buildReceipt, writeReceiptFile, OLP_URL } from "../olp/olp-client.mjs";
 
-// --- SYNC (declare the claim)
-await sendFrame({
-  nodes: [
-    {
-      id: "C1",
-      type: "Claim",
-      label: "SPY likely up tomorrow",
-      attrs: { asset_class: "equity", cadence_pair: "min↔hour" },
-      weight: 0.62, // your “So:” confidence if you want to use it later
-    },
-  ],
-});
-
-// --- MEASURE (telemetry; pretend we computed Δ_scale)
+const claim = "SPY likely up tomorrow";
 const deltaScale = 0.028;
-await sendFrame({
-  nodes: [{ id: "E1", type: "Evidence", label: "FlowState day decode + 30d 1m ctx" }],
-  edges: [{ src: "E1", dst: "C1", rel: "supports", weight: 0.9 }],
-  telem: { delta_scale: deltaScale },
-});
 
-// --- STITCH (realized outcome lands later — demo uses +0.5%)
-const realized = { ret: 0.005 };
-await sendFrame({
-  nodes: [{ id: "O1", type: "Outcome", label: "Realized +0.5%" }],
-  edges: [{ src: "O1", dst: "C1", rel: "updates", weight: 1.0 }],
-  telem: { delta_scale: deltaScale },
-});
+console.log("[setup] OLP_URL =", OLP_URL);
 
-// --- Write a tiny receipt JSON for the UI
+try {
+  const res = await sendFrame(minimalFrame({ claimLabel: claim, deltaScale }));
+  console.log("[post] OK:", res);
+} catch (e) {
+  console.error("[post] FAIL:", e.message);
+}
+
 const receipt = buildReceipt({
-  claim: "SPY likely up tomorrow",
+  claim,
   because: ["FlowState day decode", "30d minute context"],
   but: [`Scale drift Δ_scale = ${deltaScale.toFixed(3)} (min↔hour)`],
-  so: "Within 3% tolerance — recheck at close",
+  so: deltaScale <= 0.03 ? "Within 3% tolerance — recheck at close"
+                         : "Above 3% — needs explanation",
   telem: { delta_scale: deltaScale },
   threshold: 0.03,
   model: "ibm-research/flowstate-r1",
   attrs: { cadence: "day" },
 });
-
-const file = await writeReceiptFile(receipt);
-console.log("[ok] wrote", file);
+await writeReceiptFile(receipt);
+console.log("[ok] wrote data/receipt.latest.json");
