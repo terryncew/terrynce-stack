@@ -1,14 +1,9 @@
-// Posts RAW frames to /frame (no wrapper), with retry. Also writes a receipt JSON.
-// Requires Node 18+ (global fetch).
+// Posts RAW frames to /frame (no wrapper). Node 18+ (global fetch).
 import fs from "node:fs";
 import path from "node:path";
 
-const BASE =
-  process.env.OLP_BASE ||
-  (process.env.OLP_URL ? process.env.OLP_URL.replace(/\/frame$/, "") : "http://127.0.0.1:8088");
-
-export const OLP_URL =
-  process.env.OLP_URL || process.env.VITE_OLP_URL || `${BASE}/frame`;
+// ↓ For GitHub-only flow, paste your 8088 forwarded URL here after Step 2.
+export const OLP_URL = process.env.OLP_URL || "https://<FORWARDED_8088_HOST>/frame";
 
 async function postOnce(url, body) {
   const r = await fetch(url, {
@@ -21,33 +16,22 @@ async function postOnce(url, body) {
   try { return JSON.parse(text); } catch { return text; }
 }
 
-async function postWithRetry(bodyObj, tries = 5, delay = 500) {
-  let last;
-  for (let i = 0; i < tries; i++) {
-    try { return await postOnce(OLP_URL, bodyObj); }   // RAW (no {frame:...})
-    catch (e) { last = e; await new Promise(r => setTimeout(r, delay)); }
-  }
-  throw new Error(`OLP POST failed after retries: ${last}`);
+export async function sendFrame(frame) {
+  return postOnce(OLP_URL, frame); // RAW (no {frame:...})
 }
 
 export function minimalFrame({
-  claimLabel,
+  claimLabel = "debug",
   deltaScale = 0.0,
-  // keep the Unicode arrow exactly: ↔
-  attrs = { asset_class: "equity", cadence_pair: "min↔hour" },
+  // keep ASCII here for safety on mobile keyboards
+  attrs = { asset_class: "equity", cadence_pair: "min-hour" },
 } = {}) {
   return {
-    stream_id: "stack",
     nodes: [{ id: "C1", type: "Claim", label: claimLabel, attrs, weight: 0.62 }],
     edges: [],
     morphs: [],
     telem: { delta_scale: deltaScale },
   };
-}
-
-export async function sendFrame({ nodes = [], edges = [], telem = {}, morphs = [], digest = null } = {}) {
-  const frame = { stream_id: "stack", nodes, edges, morphs, telem, ...(digest ? { digest } : {}) };
-  return postWithRetry(frame);
 }
 
 export function buildReceipt({ claim, because = [], but = [], so = "",
