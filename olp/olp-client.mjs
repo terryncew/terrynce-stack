@@ -1,11 +1,11 @@
-// Robust client: posts raw frames to /frame (no wrapper), with retry.
-// Also writes a receipt JSON.
+// Posts RAW frames to /frame (no wrapper), with retry. Also writes a receipt JSON.
+// Requires Node 18+ (global fetch).
 import fs from "node:fs";
 import path from "node:path";
 
 const BASE =
   process.env.OLP_BASE ||
-  (process.env.OLP_URL ? process.env.OLP_URL.replace(/\/frame$/, "") : "http://127.0.0.1:8000");
+  (process.env.OLP_URL ? process.env.OLP_URL.replace(/\/frame$/, "") : "http://127.0.0.1:8088");
 
 export const OLP_URL =
   process.env.OLP_URL || process.env.VITE_OLP_URL || `${BASE}/frame`;
@@ -24,12 +24,8 @@ async function postOnce(url, body) {
 async function postWithRetry(bodyObj, tries = 5, delay = 500) {
   let last;
   for (let i = 0; i < tries; i++) {
-    try {
-      return await postOnce(OLP_URL, bodyObj);          // send RAW frame
-    } catch (e) {
-      last = e;
-      await new Promise(r => setTimeout(r, delay));
-    }
+    try { return await postOnce(OLP_URL, bodyObj); }   // RAW (no {frame:...})
+    catch (e) { last = e; await new Promise(r => setTimeout(r, delay)); }
   }
   throw new Error(`OLP POST failed after retries: ${last}`);
 }
@@ -37,7 +33,8 @@ async function postWithRetry(bodyObj, tries = 5, delay = 500) {
 export function minimalFrame({
   claimLabel,
   deltaScale = 0.0,
-  attrs = { asset_class: "equity", cadence_pair: "min-hour" }, // pure ASCII
+  // keep the Unicode arrow exactly: ↔
+  attrs = { asset_class: "equity", cadence_pair: "min↔hour" },
 } = {}) {
   return {
     stream_id: "stack",
@@ -62,3 +59,4 @@ export async function writeReceiptFile(receipt, file = "data/receipt.latest.json
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(receipt, null, 2));
   return file;
+}
