@@ -5,6 +5,6 @@
   "engines": { "node": ">=18.0.0" },
   "scripts": {
     "emit": "node examples/predict_spy.mjs",
-    "api": "uvicorn server.main:app --port 8000 --reload"
+    "api": "uvicorn server.main:app --host 0.0.0.0 --port 8001 --reload"
   }
 }
