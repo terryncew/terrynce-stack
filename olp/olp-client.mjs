@@ -62,4 +62,3 @@ export async function writeReceiptFile(receipt, file = "data/receipt.latest.json
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(receipt, null, 2));
   return file;
-}
